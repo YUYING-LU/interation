@@ -1,0 +1,173 @@
+---
+title: "interation_listcols"
+author: "Yuying Lu"
+date: "2024-10-29"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(rvest)
+```
+
+```{r}
+l = list(
+  vec_numeric = 1:4,
+  unif_sample = runif(100),
+  mat = matrix(1:8, nrow = 2, byrow = TRUE),
+  summary = summary(rnorm(100))
+)
+```
+
+
+```{r}
+l$vec_numeric
+
+l$mat
+
+l$mat[2,3]
+
+l['mat']
+l[['mat']]
+l[['mat']][2,4]
+l[[4]]
+```
+
+Make a list that's hopefully a bit more useful
+
+```{r}
+list_norm = 
+  list(
+    a = rnorm(20,0,5),
+    b = rnorm(20,4,5),
+    c = rnorm(20,0,10),
+    d = rnorm(20,4,10)
+  )
+
+
+list_norm[["b"]]
+
+```
+
+Let's reuse the function we used last time
+
+```{r}
+mean_and_sd = function(x){
+  mean_x = mean(x)
+  sd_x = sd(x)
+  
+  out_df = 
+    tibble(
+      mean = mean_x,
+      sd = sd_x
+    )
+  return(out_df)
+}
+
+
+mean_and_sd(list_norm[["a"]])
+mean_and_sd(list_norm[["b"]])
+mean_and_sd(list_norm[["c"]])
+mean_and_sd(list_norm[["d"]])
+
+```
+
+
+## Use a for loop
+
+Creat output list, and run a for loop
+
+```{r}
+output = vector("list", length = 4)
+
+for (i in 1:4){
+  output[[i]] = mean_and_sd(list_norm[[i]])
+}
+
+output
+```
+
+
+## Do the same thing
+
+but with `map` instead
+
+
+```{r}
+map(list_norm, mean_and_sd)
+```
+
+
+```{r}
+map(list_norm,mean)
+map(list_norm,IQR)
+```
+
+
+```{r}
+map_dfr(list_norm,IQR)
+map_dbl(list_norm,IQR)
+```
+```{r}
+map_dfr(list_norm,mean_and_sd)
+```
+
+### LIST COLUMNS!!!
+
+```{r}
+listcol_df = 
+  tibble(
+    name = c("a", "b", "c", "d"),
+    samp = list_norm
+  )
+
+listcol_df
+
+listcol_df |> 
+  filter(name %in% c("a","b"))
+
+listcol_df |> 
+  select(-samp)
+
+listcol_df[['samp']][["a"]]
+```
+
+
+
+```{r}
+mean_and_sd(listcol_df[['samp']][["a"]])
+```
+
+```{r}
+listcol_df[['samp']]
+map(listcol_df[['samp']],mean_and_sd)
+```
+```{r}
+df_new = 
+  listcol_df |> 
+  mutate(output = map(samp, mean_and_sd),
+         iqr = map(samp, IQR),
+         iqr_dbl = map_dbl(samp, IQR)) |> 
+  select(-samp) |> 
+  unnest(output)
+
+df_new
+
+```
+
+```{r}
+df_new = 
+  listcol_df |> 
+  mutate(output = map(samp, mean_and_sd),
+         iqr = map(samp, IQR),
+         iqr_dbl = map_dbl(samp, IQR)) |> 
+  unnest(output)
+
+df_new
+
+```
+
