@@ -1,10 +1,21 @@
-
-nsduh_table_format = function(table_order, drug_name){
-  out_table = 
-    nsduh_html |> 
+nsduh_table_format <- function(html, table_num) {
+  
+  table = 
+    html |> 
     html_table() |> 
-    nth(table_order) |>
+    nth(table_num) |>
     slice(-1) |> 
-    mutate(drug = drug_name)
-  return(out_table)
+    select(-contains("P Value")) |>
+    pivot_longer(
+      -State,
+      names_to = "age_year", 
+      values_to = "percent") |>
+    separate(age_year, into = c("age", "year"), sep = "\\(") |>
+    mutate(
+      year = str_replace(year, "\\)", ""),
+      percent = str_replace(percent, "[a-c]$", ""),
+      percent = as.numeric(percent)) |>
+    filter(!(State %in% c("Total U.S.", "Northeast", "Midwest", "South", "West")))
+  
+  table
 }
